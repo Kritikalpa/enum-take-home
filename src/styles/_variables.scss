@@ -1,0 +1,27 @@
+:root {
+  --color-primary: #1677ff;
+  --color-danger: #ff4d4f;
+  --color-highlight-bg: #ffffff;
+  --color-border: #d0d7de;
+  --color-muted: #6e7781;
+  --color-bg: #f8fafc;
+
+  --font-base: 'Inter', sans-serif;
+
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+
+  --radius: 6px;
+
+  --duration-fast: 120ms;
+  --duration-medium: 250ms;
+  --easing: cubic-bezier(0.4, 0, 0.2, 1);
+
+  --text-xs: 10px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --text-xl: 18px;
+}

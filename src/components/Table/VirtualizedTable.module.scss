@@ -1,0 +1,144 @@
+.tableContainer {
+  height: calc(100dvh - 136px);
+  width: 100%;
+  overflow: auto;
+  background: var(--color-highlight-bg);
+  position: relative;
+  border: 1px solid var(--color-border);
+  padding-left: var(--space-sm);
+  padding-bottom: var(--space-sm);
+}
+
+.toolbar {
+  display: flex;
+  margin: var(--space-sm) 0;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  gap: 8px;
+}
+
+.searchInput {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  transition: border-color 0.2s;
+  &:focus-visible {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  background: var(--color-highlight-bg);
+  z-index: 2;
+  border-bottom: 1px solid var(--color-border);
+  padding: var(--space-xs) 0;
+  width: fit-content;
+}
+
+.headerCell {
+  min-width: 120px;
+  text-align: center;
+  padding: var(--space-xs);
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  border-right: 1px solid var(--color-border);
+}
+
+.tableRow {
+  position: absolute;
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tableCell {
+  position: absolute;
+  background: var(--color-highlight-bg);
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.loading {
+  padding: var(--space-md);
+  text-align: center;
+  background-color: var(--color-highlight-bg);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+.sortBar {
+  margin: 16px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sortDropdownWrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.sortTrigger {
+  padding: 6px 12px;
+  background: var(--color-highlight-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sortArrow {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.sortDropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  background: var(--color-highlight-bg);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 8px;
+  padding: 4px 0;
+  max-height: 250px;
+  overflow-y: auto;
+  width: 220px;
+}
+
+.sortItem {
+  padding: 8px 12px;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+
+  &:hover {
+    background: #f6f6f6;
+  }
+}
+
+.sortIcon {
+  font-size: 12px;
+  opacity: 0.7;
+}

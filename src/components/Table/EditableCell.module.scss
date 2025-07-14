@@ -1,0 +1,65 @@
+.cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: var(--space-sm);
+  height: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  // border: 1px solid var(--color-border);
+}
+
+.input {
+  width: 100%;
+  padding: var(--space-xs);
+  font-size: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  outline: none;
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-xs);
+  margin-top: var(--space-xs);
+  align-items: center;
+}
+
+.actions button {
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.value {
+  cursor: pointer;
+  font-size: 14px;
+  padding: var(--space-xs);
+  transition: background var(--duration-fast) var(--easing);
+}
+
+.value:hover {
+  background-color: #f0f0f0;
+}
+
+.spinner {
+  margin-left: 6px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #ccc;
+  border-top-color: #333;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error {
+  margin-top: 4px;
+  color: red;
+  font-size: 12px;
+}

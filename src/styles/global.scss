@@ -1,0 +1,15 @@
+@import "variables";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: var(--font-base);
+  background-color: var(--color-bg);
+  color: #24292f;
+  padding: var(--space-md);
+  font-size: var(--text-md);
+}

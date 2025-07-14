@@ -1,0 +1,26 @@
+.videoStrip {
+  display: flex;
+  gap: 4px;
+  // overflow-x: auto;
+  padding: 4px;
+  align-items: center;
+  width: fit-content;
+}
+
+.thumbnail {
+  // width: 180px;
+  // height: 160px;
+  object-fit: cover;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: transform 0.2s ease;
+}
+
+.thumbnail:hover {
+  transform: scale(1.05);
+}
+
+// .skeletonRow {
+//   font-size: 12px;
+//   color: #999;
+// }
