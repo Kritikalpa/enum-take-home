@@ -1,7 +1,6 @@
 import {
   AUDIO_COLUMN_COUNT,
   audioURLs,
-  PAGE_SIZE,
   TOTAL_COLUMNS,
   VIDEO_COLUMN_COUNT,
   videoIdList,
