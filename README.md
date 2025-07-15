@@ -38,6 +38,8 @@ yarn install
 npm run dev
 ```
 
+---
+
 ### 🔍 Filtering, Searching, Sorting
 Filtering: Multi-select per column, works with text, audio, and video types
 

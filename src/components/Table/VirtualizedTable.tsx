@@ -54,33 +54,33 @@ const VirtualizedTable: React.FC = () => {
 
   const debouncedSearchQuery = useDebounce(searchQuery);
 
-  const filteredData = useMemo(() => {
-    return data.filter((row) => {
-      const matchesSearch = debouncedSearchQuery
-        ? row.columns.some((cell) =>
-            cell.data.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-          )
-        : true;
+  // const filteredData = useMemo(() => {
+  //   return data.filter((row) => {
+  //     const matchesSearch = debouncedSearchQuery
+  //       ? row.columns.some((cell) =>
+  //           cell.data.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
+  //         )
+  //       : true;
 
-      const matchesFilters = Object.entries(columnFilters || {}).every(
-        ([colIdxStr, values]) => {
-          const colIdx = +colIdxStr;
-          const cell = row.columns[colIdx];
+  //     const matchesFilters = Object.entries(columnFilters || {}).every(
+  //       ([colIdxStr, values]) => {
+  //         const colIdx = +colIdxStr;
+  //         const cell = row.columns[colIdx];
 
-          if (values.length === 0) return true;
+  //         if (values.length === 0) return true;
 
-          if (["Video", "Audio"].includes(cell.category)) {
-            const parts = cell.data.split(",").map((v) => v.trim());
-            return parts.some((v) => values.includes(v));
-          }
+  //         if (["Video", "Audio"].includes(cell.category)) {
+  //           const parts = cell.data.split(",").map((v) => v.trim());
+  //           return parts.some((v) => values.includes(v));
+  //         }
 
-          return values.includes(cell.data);
-        }
-      );
+  //         return values.includes(cell.data);
+  //       }
+  //     );
 
-      return matchesSearch && matchesFilters;
-    });
-  }, [data, debouncedSearchQuery, columnFilters]);
+  //     return matchesSearch && matchesFilters;
+  //   });
+  // }, [data, debouncedSearchQuery, columnFilters]);
 
   useEffect(() => {
     dispatch(
@@ -117,7 +117,7 @@ const VirtualizedTable: React.FC = () => {
   }, [dispatch, page, hasMore, loading]);
 
   const rowVirtualizer = useVirtualizer({
-    count: filteredData.length,
+    count: data.length,
     getScrollElement: () => parentRef.current,
     estimateSize: (index) => rowHeights[index] || 48,
     overscan: 5,
@@ -340,7 +340,7 @@ const VirtualizedTable: React.FC = () => {
         >
           {rowVirtualizer.getVirtualItems().map((virtualRow) => (
             <div
-              key={filteredData[virtualRow.index].id}
+              key={data[virtualRow.index].id}
               className={styles.tableRow}
               style={{
                 transform: `translateY(${virtualRow.start}px)`,
@@ -354,12 +354,12 @@ const VirtualizedTable: React.FC = () => {
             >
               {colVirtualizer.getVirtualItems().map((virtualCol) => {
                 const cellData =
-                  filteredData[virtualRow.index]?.columns[virtualCol.index]
+                  data[virtualRow.index]?.columns[virtualCol.index]
                     .data;
                 return (
                   <div
                     key={virtualCol.key}
-                    data-row={filteredData[virtualRow.index].id}
+                    data-row={data[virtualRow.index].id}
                     data-col={virtualCol.index}
                     className={styles.tableCell}
                     style={{
@@ -374,7 +374,7 @@ const VirtualizedTable: React.FC = () => {
                     {renderCell(
                       cellData,
                       virtualCol.index,
-                      filteredData[virtualRow.index].id
+                      data[virtualRow.index].id
                     )}
                   </div>
                 );
