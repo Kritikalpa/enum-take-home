@@ -23,7 +23,7 @@ const VideoStrip: React.FC<VideoStripProps> = ({
       (entries) => {
         if (entries[0].isIntersecting) setVisible(true);
       },
-      { threshold: 0.05 }
+      { threshold: 0.01 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();

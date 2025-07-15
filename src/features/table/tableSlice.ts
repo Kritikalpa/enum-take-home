@@ -8,6 +8,7 @@ import { type TableRow } from "../../types/table";
 
 interface TableState {
   data: TableRow[];
+  originalData: TableRow[];
   loading: boolean;
   error: string | null;
   page: number;
@@ -16,6 +17,7 @@ interface TableState {
 
 const initialState: TableState = {
   data: [],
+  originalData: [],
   loading: false,
   error: null,
   page: 1,
@@ -50,12 +52,20 @@ const tableSlice = createSlice({
     ) {
       const { columnIndex, direction } = action.payload;
       state.data = [...state.data].sort((a, b) => {
+        if (["Video", "Audio"].includes(a.columns[columnIndex].category)) {
+          const aLen = a.columns[columnIndex].data.split(",").length;
+          const bLen = b.columns[columnIndex].data.split(",").length;
+          return direction === "asc" ? aLen - bLen : bLen - aLen;
+        }
         const aVal = a.columns[columnIndex].data ?? "";
         const bVal = b.columns[columnIndex].data ?? "";
         return direction === "asc"
           ? aVal.localeCompare(bVal)
           : bVal.localeCompare(aVal);
       });
+    },
+    clearSort(state) {
+      state.data = [...state.originalData];
     },
   },
   extraReducers: (builder) => {
@@ -68,6 +78,7 @@ const tableSlice = createSlice({
         state.loading = false;
         state.page = action.payload.page;
         state.data = [...state.data, ...action.payload.data];
+        state.originalData = [...state.originalData, ...action.payload.data];
         state.hasMore = action.payload.page < 2;
       })
       .addCase(fetchPage.rejected, (state, action) => {
@@ -77,5 +88,5 @@ const tableSlice = createSlice({
   },
 });
 
-export const { updateCell, sortTable } = tableSlice.actions;
+export const { updateCell, sortTable, clearSort } = tableSlice.actions;
 export default tableSlice.reducer;

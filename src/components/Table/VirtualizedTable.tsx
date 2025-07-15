@@ -8,16 +8,26 @@ import React, {
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
-import { fetchPage, sortTable } from "../../features/table/tableSlice";
+import {
+  clearSort,
+  fetchPage,
+  sortTable,
+} from "../../features/table/tableSlice";
 import styles from "./VirtualizedTable.module.scss";
 import EditableCell from "./EditableCell";
-import { TOTAL_COLUMNS, VIDEO_COLUMN_COUNT } from "../../utils/constants";
+import {
+  AUDIO_COLUMN_COUNT,
+  TOTAL_COLUMNS,
+  VIDEO_COLUMN_COUNT,
+} from "../../utils/constants";
 import VideoStrip from "../VideoStrip/VideoStrip";
 import Modal from "../Shared/Modal/Modal";
 import Button from "../Shared/Button/Button";
 import FilterIcon from "../../assets/FilterIcon";
 import FilterDropdown from "../Shared/FilterDropdown/FilterDropdown";
 import TableSkeleton from "../Shared/Skeleton/TableSkeleton";
+import AudioStrip from "../AudioStrip/AudioStrip";
+import { useDebounce } from "../../hooks/useDebounce";
 
 const VirtualizedTable: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -39,25 +49,35 @@ const VirtualizedTable: React.FC = () => {
 
   const parentRef = useRef<HTMLDivElement>(null);
 
+  const debouncedSearchQuery = useDebounce(searchQuery);
+
   const filteredData = useMemo(() => {
     return data.filter((row) => {
-      const matchesSearch = searchQuery
+      const matchesSearch = debouncedSearchQuery
         ? row.columns.some((cell) =>
-            cell.data.toLowerCase().includes(searchQuery.toLowerCase())
+            cell.data.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
           )
         : true;
 
       const matchesFilters = Object.entries(columnFilters).every(
-        ([colIdx, values]) => {
-          return (
-            values.length === 0 || values.includes(row.columns[+colIdx].data)
-          );
+        ([colIdxStr, values]) => {
+          const colIdx = +colIdxStr;
+          const cell = row.columns[colIdx];
+
+          if (values.length === 0) return true;
+
+          if (["Video", "Audio"].includes(cell.category)) {
+            const parts = cell.data.split(",").map((v) => v.trim());
+            return parts.some((v) => values.includes(v));
+          }
+
+          return values.includes(cell.data);
         }
       );
 
       return matchesSearch && matchesFilters;
     });
-  }, [data, searchQuery, columnFilters]);
+  }, [data, debouncedSearchQuery, columnFilters]);
 
   useEffect(() => {
     dispatch(fetchPage(1));
@@ -101,13 +121,13 @@ const VirtualizedTable: React.FC = () => {
 
       setRowHeights((prev) => {
         if (!prev[row] || prev[row] < height) {
-          return { ...prev, [row]: height };
+          return { ...prev, [row]: Math.max(height, 48) };
         }
         return prev;
       });
       setColWidths((prev) => {
         if (!prev[col] || prev[col] < width) {
-          return { ...prev, [col]: width };
+          return { ...prev, [col]: Math.max(width, 120) };
         }
         return prev;
       });
@@ -133,7 +153,13 @@ const VirtualizedTable: React.FC = () => {
 
   const getUniqueColumnValues = (colIndex: number) => {
     const values = new Set<string>();
-    data.forEach((row) => values.add(row.columns[colIndex].data));
+    data.forEach((row) => {
+      if (["Video", "Audio"].includes(row.columns[colIndex].category))
+        return row.columns[colIndex].data
+          ?.split(",")
+          .forEach((d) => values.add(d));
+      return values.add(row.columns[colIndex].data);
+    });
     return Array.from(values);
   };
 
@@ -149,6 +175,20 @@ const VirtualizedTable: React.FC = () => {
             if (el) {
               measureCell(rowId, colIndex, el);
             }
+          }}
+        />
+      );
+    } else if (
+      colIndex >= VIDEO_COLUMN_COUNT &&
+      colIndex < VIDEO_COLUMN_COUNT + AUDIO_COLUMN_COUNT
+    ) {
+      const audioUrls = value.split(",");
+      return (
+        <AudioStrip
+          audioUrls={audioUrls}
+          width={colWidths[colIndex]}
+          onContentLoad={(el) => {
+            if (el) measureCell(rowId, colIndex, el);
           }}
         />
       );
@@ -171,6 +211,13 @@ const VirtualizedTable: React.FC = () => {
   const openModal = (id: string) => setModalVideo(id);
   const closeModal = () => setModalVideo(null);
 
+  const handleReset = () => {
+    setSearchQuery("");
+    setColumnFilters({});
+    setSort(null);
+    dispatch(clearSort());
+  };
+
   return (
     <>
       <div className={styles.toolbar}>
@@ -181,8 +228,17 @@ const VirtualizedTable: React.FC = () => {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
-        <Button typeVariant="primary">Apply All</Button>
-        <Button typeVariant="reset" ghost>
+        <Button
+          typeVariant="primary"
+          onClick={() => {
+            alert(
+              "Currently data is filtered live, so didn't implement Apply. Large dataset usually needs to be filtered as minimal as possible"
+            );
+          }}
+        >
+          Apply
+        </Button>
+        <Button typeVariant="reset" ghost onClick={handleReset}>
           Reset
         </Button>
       </div>
@@ -192,8 +248,12 @@ const VirtualizedTable: React.FC = () => {
             className={styles.sortTrigger}
             onClick={() => setSortDropdownOpen((prev) => !prev)}
           >
-            Sort by :{" "}
-            <strong>{sort?.col ? `Col ${sort?.col + 1}` : "None"}</strong>{" "}
+            Sort by :
+            <strong>
+              {sort?.col !== null && sort?.col !== undefined
+                ? `Col ${sort?.col + 1}`
+                : "None"}
+            </strong>{" "}
             <span className={styles.sortArrow}>
               {sort?.dir === "asc" ? "↑" : "↓"}
             </span>
