@@ -1,40 +1,70 @@
-import { type TableRow } from "../../types/table";
-import {
-  AUDIO_COLUMN_COUNT,
-  audioURLs,
-  PAGE_SIZE,
-  TOTAL_COLUMNS,
-  VIDEO_COLUMN_COUNT,
-  videoIdList,
-} from "../../utils/constants";
-import { getRandomCommaSeparatedString } from "../../utils/functions";
+import { generateAllData } from "../../app/tableDataSource";
+import type { TableRow } from "../../types/table";
 
-export async function simulateFetchPage(page: number): Promise<TableRow[]> {
-  await new Promise((res) => setTimeout(res, 3000));
+type FetchParams = {
+  page: number;
+  searchQuery?: string;
+  columnFilters?: Record<number, string[]>;
+  sort?: { columnIndex: number; direction: "asc" | "desc" };
+};
 
-  const rows: TableRow[] = Array.from({ length: PAGE_SIZE }, (_, rowIndex) => {
-    const id = (page - 1) * PAGE_SIZE + rowIndex;
-    const columns = Array.from({ length: TOTAL_COLUMNS }, (_, colIndex) => {
-      if (colIndex < VIDEO_COLUMN_COUNT)
-        return {
-          data: getRandomCommaSeparatedString(videoIdList, 5, 2),
-          category: "Video",
-        };
-      else if (
-        colIndex >= VIDEO_COLUMN_COUNT &&
-        colIndex < VIDEO_COLUMN_COUNT + AUDIO_COLUMN_COUNT
+export async function simulateFetchPage({
+  page,
+  searchQuery,
+  columnFilters,
+  sort,
+}: FetchParams): Promise<TableRow[]> {
+  await new Promise((res) => setTimeout(res, 300));
+
+  const allRows: TableRow[] = generateAllData();
+
+  let filtered = [...allRows];
+
+  if (searchQuery) {
+    filtered = filtered.filter((row) =>
+      row.columns.some((cell) =>
+        cell.data.toLowerCase().includes(searchQuery.toLowerCase())
       )
-        return {
-          data: getRandomCommaSeparatedString(audioURLs, 2, 1),
-          category: "Audio",
-        };
-      return { data: `Row ${id + 1}, Col ${colIndex + 1}`, category: "Text" };
-    });
-    return {
-      id,
-      columns,
-    };
-  });
+    );
+  }
 
-  return rows;
+  if (columnFilters) {
+    filtered = filtered.filter((row) =>
+      Object.entries(columnFilters).every(([colIdxStr, values]) => {
+        const colIdx = +colIdxStr;
+        const cell = row.columns[colIdx];
+
+        if (values.length === 0) return true;
+
+        if (["Video", "Audio"].includes(cell.category)) {
+          const parts = cell.data.split(",").map((v) => v.trim());
+          return parts.some((v) => values.includes(v));
+        }
+
+        return values.includes(cell.data);
+      })
+    );
+  }
+
+  if (sort) {
+    filtered.sort((a, b) => {
+      const { columnIndex, direction } = sort;
+      if (["Video", "Audio"].includes(a.columns[columnIndex].category)) {
+        const aLen = a.columns[columnIndex].data.split(",").length;
+        const bLen = b.columns[columnIndex].data.split(",").length;
+        return direction === "asc" ? aLen - bLen : bLen - aLen;
+      }
+      const aVal = a.columns[columnIndex].data ?? "";
+      const bVal = b.columns[columnIndex].data ?? "";
+      return direction === "asc"
+        ? aVal.localeCompare(bVal)
+        : bVal.localeCompare(aVal);
+    });
+  }
+
+  const PAGE_SIZE = 10;
+  const start = (page - 1) * PAGE_SIZE;
+  const pageData = filtered.slice(start, start + PAGE_SIZE);
+
+  return pageData;
 }

@@ -35,13 +35,16 @@ const VirtualizedTable: React.FC = () => {
     (state) => state.table
   );
 
-  const [sort, setSort] = useState<{ col: number; dir: "asc" | "desc" } | null>(
-    null
-  );
+  const [sort, setSort] = useState<
+    | {
+        columnIndex: number;
+        direction: "asc" | "desc";
+      }
+    | undefined
+  >();
   const [searchQuery, setSearchQuery] = useState("");
-  const [columnFilters, setColumnFilters] = useState<Record<number, string[]>>(
-    {}
-  );
+  const [columnFilters, setColumnFilters] =
+    useState<Record<number, string[]>>();
   const [modalVideo, setModalVideo] = useState<string | null>(null);
   const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
@@ -59,7 +62,7 @@ const VirtualizedTable: React.FC = () => {
           )
         : true;
 
-      const matchesFilters = Object.entries(columnFilters).every(
+      const matchesFilters = Object.entries(columnFilters || {}).every(
         ([colIdxStr, values]) => {
           const colIdx = +colIdxStr;
           const cell = row.columns[colIdx];
@@ -80,8 +83,15 @@ const VirtualizedTable: React.FC = () => {
   }, [data, debouncedSearchQuery, columnFilters]);
 
   useEffect(() => {
-    dispatch(fetchPage(1));
-  }, [dispatch]);
+    dispatch(
+      fetchPage({
+        page: 1,
+        searchQuery: debouncedSearchQuery,
+        columnFilters,
+        sort,
+      })
+    );
+  }, [dispatch, debouncedSearchQuery, columnFilters, sort]);
 
   useEffect(() => {
     const scrollEl = parentRef.current;
@@ -91,7 +101,14 @@ const VirtualizedTable: React.FC = () => {
       const bottomOffset =
         scrollEl.scrollHeight - scrollEl.scrollTop - scrollEl.clientHeight;
       if (bottomOffset < 200 && !loading && hasMore) {
-        dispatch(fetchPage(page + 1));
+        dispatch(
+          fetchPage({
+            page: page + 1,
+            searchQuery: debouncedSearchQuery,
+            columnFilters,
+            sort,
+          })
+        );
       }
     };
 
@@ -145,8 +162,10 @@ const VirtualizedTable: React.FC = () => {
 
   const toggleSort = (colIndex: number) => {
     const newDir =
-      sort?.col === colIndex && sort.dir === "asc" ? "desc" : "asc";
-    setSort({ col: colIndex, dir: newDir });
+      sort?.columnIndex === colIndex && sort.direction === "asc"
+        ? "desc"
+        : "asc";
+    setSort({ columnIndex: colIndex, direction: newDir });
     setSortDropdownOpen(false);
     dispatch(sortTable({ columnIndex: colIndex, direction: newDir }));
   };
@@ -214,7 +233,7 @@ const VirtualizedTable: React.FC = () => {
   const handleReset = () => {
     setSearchQuery("");
     setColumnFilters({});
-    setSort(null);
+    setSort(undefined);
     dispatch(clearSort());
   };
 
@@ -250,12 +269,12 @@ const VirtualizedTable: React.FC = () => {
           >
             Sort by :
             <strong>
-              {sort?.col !== null && sort?.col !== undefined
-                ? `Col ${sort?.col + 1}`
+              {sort?.columnIndex !== null && sort?.columnIndex !== undefined
+                ? `Col ${sort?.columnIndex + 1}`
                 : "None"}
             </strong>{" "}
             <span className={styles.sortArrow}>
-              {sort?.dir === "asc" ? "↑" : "↓"}
+              {sort?.direction === "asc" ? "↑" : "↓"}
             </span>
           </button>
 
@@ -271,7 +290,11 @@ const VirtualizedTable: React.FC = () => {
                 >
                   Col {i + 1}
                   <span className={styles.sortIcon}>
-                    {sort?.col === i ? (sort?.dir === "asc" ? "↑" : "↓") : "↕"}
+                    {sort?.columnIndex === i
+                      ? sort?.direction === "asc"
+                        ? "↑"
+                        : "↓"
+                      : "↕"}
                   </span>
                 </div>
               ))}
@@ -295,7 +318,7 @@ const VirtualizedTable: React.FC = () => {
               {/* {sort?.col === i ? (sort.dir === "asc" ? "↑" : "↓") : ""} */}
               <FilterDropdown
                 values={getUniqueColumnValues(i)}
-                selected={columnFilters[i] || []}
+                selected={columnFilters?.[i] || []}
                 onChange={(newSelected) =>
                   setColumnFilters((prev) => ({
                     ...prev,

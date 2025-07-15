@@ -11,7 +11,7 @@ import { type TableRow } from "../types/table";
 
 let _cachedAllData: TableRow[] | null = null;
 
-export function generateAllData(totalRows = 100): TableRow[] {
+export function generateAllData(totalRows = 20): TableRow[] {
   if (_cachedAllData) return _cachedAllData;
 
   const rows: TableRow[] = Array.from({ length: totalRows }, (_, rowIndex) => {

@@ -26,8 +26,23 @@ const initialState: TableState = {
 
 export const fetchPage = createAsyncThunk(
   "table/fetchPage",
-  async (page: number) => {
-    const data = await simulateFetchPage(page);
+  async ({
+    page,
+    searchQuery,
+    columnFilters,
+    sort,
+  }: {
+    page: number;
+    searchQuery?: string;
+    columnFilters?: Record<number, string[]>;
+    sort?: { columnIndex: number; direction: "asc" | "desc" };
+  }) => {
+    const data = await simulateFetchPage({
+      page,
+      searchQuery,
+      columnFilters,
+      sort,
+    });
     return { data, page };
   }
 );
@@ -76,10 +91,34 @@ const tableSlice = createSlice({
       })
       .addCase(fetchPage.fulfilled, (state, action) => {
         state.loading = false;
-        state.page = action.payload.page;
-        state.data = [...state.data, ...action.payload.data];
-        state.originalData = [...state.originalData, ...action.payload.data];
-        state.hasMore = action.payload.page < 2;
+        const { data: incomingData, page } = action.payload;
+        const isFiltered =
+          action.meta.arg.searchQuery ||
+          action.meta.arg.columnFilters ||
+          action.meta.arg.sort;
+
+        const isFirstPage = page === 1;
+
+        console.log(isFirstPage, isFiltered, incomingData)
+
+        if (isFiltered) {
+          if (isFirstPage) {
+            state.data = incomingData;
+          } else {
+            state.data = [...state.data, ...incomingData];
+          }
+        } else {
+          if (isFirstPage) {
+            state.data = incomingData;
+            state.originalData = incomingData;
+          } else {
+            state.data = [...state.data, ...incomingData];
+            state.originalData = [...state.originalData, ...incomingData];
+          }
+        }
+
+        state.page = page;
+        state.hasMore = page < 2;
       })
       .addCase(fetchPage.rejected, (state, action) => {
         state.loading = false;
