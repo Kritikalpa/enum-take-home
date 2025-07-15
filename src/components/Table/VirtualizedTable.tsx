@@ -155,7 +155,16 @@ const VirtualizedTable: React.FC = () => {
     }
 
     return (
-      <EditableCell rowId={rowId} colIndex={colIndex} initialValue={value} />
+      <EditableCell
+        rowId={rowId}
+        colIndex={colIndex}
+        initialValue={value}
+        onContentChange={(el) => {
+          if (el) {
+            measureCell(rowId, colIndex, el);
+          }
+        }}
+      />
     );
   };
 
@@ -300,6 +309,7 @@ const VirtualizedTable: React.FC = () => {
             src={`https://www.youtube.com/embed/${modalVideo}`}
             allowFullScreen
             title="Video Player"
+            tabIndex={0}
           />
         </Modal>
       )}

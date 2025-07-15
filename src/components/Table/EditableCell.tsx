@@ -1,24 +1,29 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { updateCell } from "../../features/table/tableSlice";
 import styles from "./EditableCell.module.scss";
+import Button from "../Shared/Button/Button";
 
 interface EditableCellProps {
   rowId: number;
   colIndex: number;
   initialValue: string;
+  onContentChange?: (el: HTMLDivElement | null) => void;
 }
 
 const EditableCell: React.FC<EditableCellProps> = ({
   rowId,
   colIndex,
   initialValue,
+  onContentChange,
 }) => {
   const dispatch = useAppDispatch();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const save = async () => {
     setSaving(true);
@@ -44,8 +49,14 @@ const EditableCell: React.FC<EditableCellProps> = ({
     setEditing(false);
   };
 
+  useEffect(() => {
+    if (containerRef.current && onContentChange && !editing) {
+      onContentChange(containerRef.current);
+    }
+  }, [initialValue, editing]);
+
   return (
-    <div className={styles.cell}>
+    <div ref={containerRef} className={styles.cell}>
       {editing ? (
         <>
           <input
@@ -54,13 +65,22 @@ const EditableCell: React.FC<EditableCellProps> = ({
             className={styles.input}
           />
           <div className={styles.actions}>
-            <button onClick={save} disabled={saving}>
+            <Button
+              typeVariant="primary"
+              onClick={save}
+              disabled={saving}
+              loading={saving}
+            >
               Save
-              {saving && <span className={styles.spinner} />}
-            </button>
-            <button onClick={cancel} disabled={saving}>
+            </Button>
+            <Button
+              typeVariant="reset"
+              ghost
+              onClick={cancel}
+              disabled={saving}
+            >
               Cancel
-            </button>
+            </Button>
           </div>
           {error && <div className={styles.error}>{error}</div>}
         </>
