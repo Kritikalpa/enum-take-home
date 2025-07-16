@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, type ReactNode } from "react";
 import styles from "./FilterDropdown.module.scss";
+import { useClickOutside } from "../../../hooks/useClickOutside";
 
 interface FilterDropdownProps {
   values: string[];
@@ -20,15 +21,9 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
   const [search, setSearch] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  useClickOutside(ref, () => {
+    setOpen(false);
+  });
 
   const toggleValue = (val: string) => {
     if (selected.includes(val)) {
@@ -38,8 +33,8 @@ const FilterDropdown: React.FC<FilterDropdownProps> = ({
     }
   };
 
-  const filtered = values.filter((v) =>
-    v.toLowerCase().includes(search.toLowerCase())
+  const filtered = values.filter(
+    (v) => v && v.toLowerCase().includes(search.toLowerCase())
   );
 
   return (

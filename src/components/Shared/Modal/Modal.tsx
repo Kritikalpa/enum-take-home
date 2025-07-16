@@ -37,7 +37,6 @@ const Modal: React.FC<React.PropsWithChildren<Props>> = ({
         const currentIndex = focusArray.indexOf(
           document.activeElement as HTMLElement
         );
-        console.log("hit", currentIndex)
         if (e.shiftKey) {
           if (currentIndex === 0) {
             e.preventDefault();

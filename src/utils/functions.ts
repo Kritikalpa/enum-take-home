@@ -12,3 +12,14 @@ export function getRandomCommaSeparatedString(arr: string[], max: number, min: n
   const selected = shuffled.slice(0, count);
   return selected.join(",");
 }
+
+export function getRandomTimeframe() {
+  const minMinutes = 10;
+  const maxMinutes = 12 * 60 + 15;
+
+  const randomMinutes = Math.floor(Math.random() * (maxMinutes - minMinutes + 1)) + minMinutes;
+  const hours = Math.floor(randomMinutes / 60);
+  const minutes = randomMinutes % 60;
+
+  return `${hours}:${minutes.toString().padStart(2, '0')}`;
+}

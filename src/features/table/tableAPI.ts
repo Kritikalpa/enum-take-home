@@ -37,7 +37,10 @@ export async function simulateFetchPage({
         if (values.length === 0) return true;
 
         if (["Video", "Audio"].includes(cell.category)) {
-          const parts = cell.data.split(",").map((v) => v.trim());
+          const parts = cell.data
+            .split(",")
+            .filter(Boolean)
+            .map((v) => v.trim());
           return parts.some((v) => values.includes(v));
         }
 
@@ -50,8 +53,12 @@ export async function simulateFetchPage({
     filtered.sort((a, b) => {
       const { columnIndex, direction } = sort;
       if (["Video", "Audio"].includes(a.columns[columnIndex].category)) {
-        const aLen = a.columns[columnIndex].data.split(",").length;
-        const bLen = b.columns[columnIndex].data.split(",").length;
+        const aLen = a.columns[columnIndex].data
+          .split(",")
+          .filter(Boolean).length;
+        const bLen = b.columns[columnIndex].data
+          .split(",")
+          .filter(Boolean).length;
         return direction === "asc" ? aLen - bLen : bLen - aLen;
       }
       const aVal = a.columns[columnIndex].data ?? "";

@@ -1,16 +1,11 @@
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useAppDispatch } from "../../hooks/useAppDispatch";
 import { useAppSelector } from "../../hooks/useAppSelector";
 import {
   clearSort,
   fetchPage,
-  sortTable,
+  updateCell,
 } from "../../features/table/tableSlice";
 import styles from "./VirtualizedTable.module.scss";
 import EditableCell from "./EditableCell";
@@ -21,12 +16,19 @@ import {
 } from "../../utils/constants";
 import VideoStrip from "../VideoStrip/VideoStrip";
 import Modal from "../Shared/Modal/Modal";
-import Button from "../Shared/Button/Button";
-import FilterIcon from "../../assets/FilterIcon";
 import FilterDropdown from "../Shared/FilterDropdown/FilterDropdown";
 import TableSkeleton from "../Shared/Skeleton/TableSkeleton";
 import AudioStrip from "../AudioStrip/AudioStrip";
 import { useDebounce } from "../../hooks/useDebounce";
+import SearchIcon from "../../assets/SearchIcon";
+import {
+  FilterOutlined,
+  RedoOutlined,
+  SortAscendingOutlined,
+  SortDescendingOutlined,
+} from "@ant-design/icons";
+import { updateCachedVideoData } from "../../app/tableDataSource";
+import { useClickOutside } from "../../hooks/useClickOutside";
 
 const VirtualizedTable: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -50,36 +52,12 @@ const VirtualizedTable: React.FC = () => {
   const [sortDropdownOpen, setSortDropdownOpen] = useState(false);
 
   const parentRef = useRef<HTMLDivElement>(null);
+  const sortDropdownRef = useRef<HTMLDivElement>(null);
 
   const debouncedSearchQuery = useDebounce(searchQuery);
-
-  // const filteredData = useMemo(() => {
-  //   return data.filter((row) => {
-  //     const matchesSearch = debouncedSearchQuery
-  //       ? row.columns.some((cell) =>
-  //           cell.data.toLowerCase().includes(debouncedSearchQuery.toLowerCase())
-  //         )
-  //       : true;
-
-  //     const matchesFilters = Object.entries(columnFilters || {}).every(
-  //       ([colIdxStr, values]) => {
-  //         const colIdx = +colIdxStr;
-  //         const cell = row.columns[colIdx];
-
-  //         if (values.length === 0) return true;
-
-  //         if (["Video", "Audio"].includes(cell.category)) {
-  //           const parts = cell.data.split(",").map((v) => v.trim());
-  //           return parts.some((v) => values.includes(v));
-  //         }
-
-  //         return values.includes(cell.data);
-  //       }
-  //     );
-
-  //     return matchesSearch && matchesFilters;
-  //   });
-  // }, [data, debouncedSearchQuery, columnFilters]);
+  useClickOutside(sortDropdownRef, () => {
+    setSortDropdownOpen(false);
+  });
 
   useEffect(() => {
     dispatch(
@@ -166,7 +144,6 @@ const VirtualizedTable: React.FC = () => {
         : "asc";
     setSort({ columnIndex: colIndex, direction: newDir });
     setSortDropdownOpen(false);
-    dispatch(sortTable({ columnIndex: colIndex, direction: newDir }));
   };
 
   const getUniqueColumnValues = (colIndex: number) => {
@@ -181,12 +158,15 @@ const VirtualizedTable: React.FC = () => {
     return Array.from(values);
   };
 
-  const renderCell = (value: string, colIndex: number, rowId: number) => {
+  const renderCell = (
+    value: { category: string; data: string; duration?: string },
+    colIndex: number,
+    rowId: number
+  ) => {
     if (colIndex < VIDEO_COLUMN_COUNT) {
-      const videoIds = value.split(",");
       return (
         <VideoStrip
-          videoIds={videoIds}
+          videoList={value}
           onOpen={openModal}
           width={colWidths[colIndex]}
           onContentLoad={(el) => {
@@ -194,19 +174,39 @@ const VirtualizedTable: React.FC = () => {
               measureCell(rowId, colIndex, el);
             }
           }}
+          onDelete={(updatedVideoData) => {
+            dispatch(
+              updateCell({
+                rowId: rowId,
+                colIndex: colIndex,
+                value: updatedVideoData,
+              })
+            );
+            updateCachedVideoData(rowId, colIndex, updatedVideoData);
+          }}
         />
       );
     } else if (
       colIndex >= VIDEO_COLUMN_COUNT &&
       colIndex < VIDEO_COLUMN_COUNT + AUDIO_COLUMN_COUNT
     ) {
-      const audioUrls = value.split(",");
+      const audioUrls = value.data.split(",").filter(Boolean);
       return (
         <AudioStrip
           audioUrls={audioUrls}
           width={colWidths[colIndex]}
           onContentLoad={(el) => {
             if (el) measureCell(rowId, colIndex, el);
+          }}
+          onDelete={(updatedVideoData) => {
+            dispatch(
+              updateCell({
+                rowId: rowId,
+                colIndex: colIndex,
+                value: updatedVideoData,
+              })
+            );
+            updateCachedVideoData(rowId, colIndex, updatedVideoData);
           }}
         />
       );
@@ -216,7 +216,7 @@ const VirtualizedTable: React.FC = () => {
       <EditableCell
         rowId={rowId}
         colIndex={colIndex}
-        initialValue={value}
+        initialValue={value.data}
         onContentChange={(el) => {
           if (el) {
             measureCell(rowId, colIndex, el);
@@ -231,74 +231,79 @@ const VirtualizedTable: React.FC = () => {
 
   const handleReset = () => {
     setSearchQuery("");
-    setColumnFilters({});
+    setColumnFilters(undefined);
     setSort(undefined);
     dispatch(clearSort());
   };
 
   return (
-    <>
+    <div className={styles.tableWrapper}>
       <div className={styles.toolbar}>
-        <input
-          type="text"
-          placeholder="Search all columns"
-          className={styles.searchInput}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        <Button
-          typeVariant="primary"
-          onClick={() => {
-            alert(
-              "Currently data is filtered live, so didn't implement Apply. Large dataset usually needs to be filtered as minimal as possible"
-            );
-          }}
-        >
-          Apply
-        </Button>
-        <Button typeVariant="reset" ghost onClick={handleReset}>
-          Reset
-        </Button>
-      </div>
-      <div className={styles.sortBar}>
-        <div className={styles.sortDropdownWrapper}>
-          <button
-            className={styles.sortTrigger}
-            onClick={() => setSortDropdownOpen((prev) => !prev)}
-          >
-            Sort by :
-            <strong>
-              {sort?.columnIndex !== null && sort?.columnIndex !== undefined
-                ? `Col ${sort?.columnIndex + 1}`
-                : "None"}
-            </strong>{" "}
-            <span className={styles.sortArrow}>
-              {sort?.direction === "asc" ? "↑" : "↓"}
-            </span>
-          </button>
+        <div className={styles.searchInput}>
+          <SearchIcon />
+          <input
+            type="text"
+            placeholder="Search all columns"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <div className={styles.headerActions}>
+          <div className={styles.reset} onClick={handleReset}>
+            <span>
+              <RedoOutlined />
+            </span>{" "}
+            Reset
+          </div>
+          <div className={styles.sortDropdownWrapper} ref={sortDropdownRef}>
+            <button
+              className={styles.sortTrigger}
+              onClick={() => setSortDropdownOpen((prev) => !prev)}
+            >
+              SORT BY :
+              <strong>
+                {sort?.columnIndex !== null && sort?.columnIndex !== undefined
+                  ? `Col #${sort?.columnIndex + 1}`
+                  : "None"}
+              </strong>{" "}
+              {sort?.direction && (
+                <span className={styles.sortArrow}>
+                  {sort?.direction === "asc" ? (
+                    <SortAscendingOutlined />
+                  ) : (
+                    <SortDescendingOutlined />
+                  )}
+                </span>
+              )}
+            </button>
 
-          {sortDropdownOpen && (
-            <div className={styles.sortDropdown}>
-              {Array.from({ length: TOTAL_COLUMNS }, (_, i) => (
-                <div
-                  key={i}
-                  className={styles.sortItem}
-                  onClick={() => {
-                    toggleSort(i);
-                  }}
-                >
-                  Col {i + 1}
-                  <span className={styles.sortIcon}>
-                    {sort?.columnIndex === i
-                      ? sort?.direction === "asc"
-                        ? "↑"
-                        : "↓"
-                      : "↕"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
+            {sortDropdownOpen && (
+              <div className={styles.sortDropdown}>
+                {Array.from({ length: TOTAL_COLUMNS }, (_, i) => (
+                  <div
+                    key={i}
+                    className={styles.sortItem}
+                    onClick={() => {
+                      toggleSort(i);
+                    }}
+                  >
+                    Col #{i + 1}
+                    <span className={styles.sortIcon}>
+                      {sort?.columnIndex === i ? (
+                        sort?.direction === "asc" ? (
+                          <SortAscendingOutlined />
+                        ) : (
+                          <SortDescendingOutlined />
+                        )
+                      ) : (
+                        ""
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -308,13 +313,11 @@ const VirtualizedTable: React.FC = () => {
             <div
               key={i}
               className={styles.headerCell}
-              // onClick={() => toggleSort(i)}
               style={{
                 width: colWidths[i],
               }}
             >
-              Col {i + 1}{" "}
-              {/* {sort?.col === i ? (sort.dir === "asc" ? "↑" : "↓") : ""} */}
+              Col #{i + 1}{" "}
               <FilterDropdown
                 values={getUniqueColumnValues(i)}
                 selected={columnFilters?.[i] || []}
@@ -324,8 +327,8 @@ const VirtualizedTable: React.FC = () => {
                     [i]: newSelected,
                   }))
                 }
-                placeholder={`Search Col ${i + 1}`}
-                icon={<FilterIcon />}
+                placeholder={`Search Col #${i + 1}`}
+                icon={<FilterOutlined />}
               />
             </div>
           ))}
@@ -340,7 +343,9 @@ const VirtualizedTable: React.FC = () => {
           {rowVirtualizer.getVirtualItems().map((virtualRow) => (
             <div
               key={data[virtualRow.index].id}
-              className={styles.tableRow}
+              className={`${styles.tableRow} ${
+                (virtualRow.index + 1) % 2 === 0 ? styles.rowEven : ""
+              }`.trim()}
               style={{
                 transform: `translateY(${virtualRow.start}px)`,
                 position: "absolute",
@@ -353,8 +358,7 @@ const VirtualizedTable: React.FC = () => {
             >
               {colVirtualizer.getVirtualItems().map((virtualCol) => {
                 const cellData =
-                  data[virtualRow.index]?.columns[virtualCol.index]
-                    .data;
+                  data[virtualRow.index]?.columns[virtualCol.index];
                 return (
                   <div
                     key={virtualCol.key}
@@ -395,7 +399,7 @@ const VirtualizedTable: React.FC = () => {
           />
         </Modal>
       )}
-    </>
+    </div>
   );
 };
 

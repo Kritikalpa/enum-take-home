@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./AudioStrip.module.scss";
 import TableSkeleton from "../Shared/Skeleton/TableSkeleton";
+import { CloseOutlined } from "@ant-design/icons";
 
 interface AudioStripProps {
   audioUrls: string[];
   width: number;
   onContentLoad?: (el: HTMLDivElement | null) => void;
+  onDelete: (updatedVideoList: string) => void;
 }
 
 const AudioStrip: React.FC<AudioStripProps> = ({
   audioUrls,
   width,
   onContentLoad,
+  onDelete,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -21,7 +24,7 @@ const AudioStrip: React.FC<AudioStripProps> = ({
       (entries) => {
         if (entries[0].isIntersecting) setVisible(true);
       },
-      { threshold: 0.01 }
+      { threshold: 0.2 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
@@ -44,14 +47,32 @@ const AudioStrip: React.FC<AudioStripProps> = ({
     });
   }, [visible, audioUrls]);
 
+  const handleDelete = (idToRemove: string) => {
+    const updated = audioUrls.filter((id) => id !== idToRemove).join(",");
+    onDelete(updated);
+  };
+
   return (
     <div ref={containerRef} className={styles.audioStrip}>
       {visible ? (
-        audioUrls.map((url, index) => (
-          <audio key={index} controls className={styles.audioPlayer}>
-            <source src={url} type="audio/mpeg" />
-            Your browser does not support the audio element.
-          </audio>
+        audioUrls.filter(Boolean).map((url, index) => (
+          <div
+            style={{
+              position: "relative",
+            }}
+            key={`audio-${index}`}
+          >
+            <audio controls className={styles.audioPlayer}>
+              <source src={url} type="audio/mpeg" />
+              Your browser does not support the audio element.
+            </audio>
+            <span
+              className={styles.iconDelete}
+              onClick={() => handleDelete(url)}
+            >
+              <CloseOutlined />
+            </span>
+          </div>
         ))
       ) : (
         <TableSkeleton rows={1} cols={1} colWidths={{ 0: width }} />

@@ -56,28 +56,18 @@ const tableSlice = createSlice({
       action: PayloadAction<{ rowId: number; colIndex: number; value: string }>
     ) {
       const { rowId, colIndex, value } = action.payload;
-      const row = state.data.find((r) => r.id === rowId);
-      if (row) {
-        row.columns[colIndex] = { ...row.columns[colIndex], data: value };
-      }
-    },
-    sortTable(
-      state,
-      action: PayloadAction<{ columnIndex: number; direction: "asc" | "desc" }>
-    ) {
-      const { columnIndex, direction } = action.payload;
-      state.data = [...state.data].sort((a, b) => {
-        if (["Video", "Audio"].includes(a.columns[columnIndex].category)) {
-          const aLen = a.columns[columnIndex].data.split(",").length;
-          const bLen = b.columns[columnIndex].data.split(",").length;
-          return direction === "asc" ? aLen - bLen : bLen - aLen;
+
+      const updateRow = (row?: TableRow) => {
+        if (row) {
+          row.columns[colIndex] = {
+            ...row.columns[colIndex],
+            data: value,
+          };
         }
-        const aVal = a.columns[columnIndex].data ?? "";
-        const bVal = b.columns[columnIndex].data ?? "";
-        return direction === "asc"
-          ? aVal.localeCompare(bVal)
-          : bVal.localeCompare(aVal);
-      });
+      };
+
+      updateRow(state.data.find((r) => r.id === rowId));
+      updateRow(state.originalData.find((r) => r.id === rowId));
     },
     clearSort(state) {
       state.data = [...state.originalData];
@@ -98,8 +88,6 @@ const tableSlice = createSlice({
           action.meta.arg.sort;
 
         const isFirstPage = page === 1;
-
-        console.log(isFirstPage, isFiltered, incomingData)
 
         if (isFiltered) {
           if (isFirstPage) {
@@ -127,5 +115,5 @@ const tableSlice = createSlice({
   },
 });
 
-export const { updateCell, sortTable, clearSort } = tableSlice.actions;
+export const { updateCell, clearSort } = tableSlice.actions;
 export default tableSlice.reducer;

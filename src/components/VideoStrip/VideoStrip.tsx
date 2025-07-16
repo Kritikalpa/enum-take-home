@@ -1,19 +1,26 @@
 import React, { useEffect, useRef, useState } from "react";
 import styles from "./VideoStrip.module.scss";
 import TableSkeleton from "../Shared/Skeleton/TableSkeleton";
+import { CloseOutlined } from "@ant-design/icons";
 
 interface VideoStripProps {
-  videoIds: string[];
+  videoList: {
+    data: string;
+    category: string;
+    duration?: string;
+  };
   onOpen: (id: string) => void;
   onContentLoad?: (el: HTMLDivElement | null) => void;
   width: number;
+  onDelete: (updatedVideoList: string) => void;
 }
 
 const VideoStrip: React.FC<VideoStripProps> = ({
-  videoIds,
+  videoList,
   onOpen,
   onContentLoad,
   width,
+  onDelete,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -23,14 +30,15 @@ const VideoStrip: React.FC<VideoStripProps> = ({
       (entries) => {
         if (entries[0].isIntersecting) setVisible(true);
       },
-      { threshold: 0.01 }
+      { threshold: 0.2 }
     );
     if (containerRef.current) observer.observe(containerRef.current);
     return () => observer.disconnect();
   }, []);
 
   useEffect(() => {
-    if (!visible || videoIds.length === 0) return;
+    const videoIds = videoList?.data?.split(",").filter(Boolean);
+    if (!visible || videoIds?.length === 0) return;
 
     let loaded = 0;
     const onThumbLoad = () => {
@@ -48,20 +56,44 @@ const VideoStrip: React.FC<VideoStripProps> = ({
         img.addEventListener("load", onThumbLoad, { once: true });
       }
     });
-  }, [visible, videoIds]);
+  }, [visible, videoList]);
+
+  const handleDelete = (idToRemove: string) => {
+    const updated = videoList?.data
+      ?.split(",")
+      .filter((id) => id !== idToRemove)
+      .join(",");
+    onDelete(updated);
+  };
 
   return (
     <div ref={containerRef} className={styles.videoStrip}>
       {visible ? (
-        videoIds.map((id) => (
-          <img
-            key={id}
-            src={`https://img.youtube.com/vi/${id}/default.jpg`}
-            alt="video thumb"
-            className={styles.thumbnail}
-            onClick={() => onOpen(id)}
-          />
-        ))
+        videoList?.data
+          ?.split(",")
+          .filter(Boolean)
+          .map((id) => (
+            <div
+              style={{
+                position: "relative",
+              }}
+              key={`thumbnail-${id}`}
+            >
+              <img
+                src={`https://img.youtube.com/vi/${id}/default.jpg`}
+                alt="video thumb"
+                className={styles.thumbnail}
+                onClick={() => onOpen(id)}
+              />
+              <span
+                className={styles.iconDelete}
+                onClick={() => handleDelete(id)}
+              >
+                <CloseOutlined />
+              </span>
+              <span className={styles.duration}>{videoList?.duration}</span>
+            </div>
+          ))
       ) : (
         <TableSkeleton rows={1} cols={1} colWidths={{ 0: width }} />
       )}
