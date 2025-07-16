@@ -18,6 +18,7 @@ const AudioStrip: React.FC<AudioStripProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [metaVisible, setMetaVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -37,6 +38,7 @@ const AudioStrip: React.FC<AudioStripProps> = ({
     const onAudioLoad = () => {
       loaded++;
       if (loaded === audioUrls.length && onContentLoad) {
+        setMetaVisible(true);
         onContentLoad(containerRef.current);
       }
     };
@@ -66,12 +68,14 @@ const AudioStrip: React.FC<AudioStripProps> = ({
               <source src={url} type="audio/mpeg" />
               Your browser does not support the audio element.
             </audio>
-            <span
-              className={styles.iconDelete}
-              onClick={() => handleDelete(url)}
-            >
-              <CloseOutlined />
-            </span>
+            {metaVisible && (
+              <span
+                className={styles.iconDelete}
+                onClick={() => handleDelete(url)}
+              >
+                <CloseOutlined />
+              </span>
+            )}
           </div>
         ))
       ) : (

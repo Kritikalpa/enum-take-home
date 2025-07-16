@@ -24,6 +24,7 @@ const VideoStrip: React.FC<VideoStripProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
+  const [metaVisible, setMetaVisible] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -44,6 +45,7 @@ const VideoStrip: React.FC<VideoStripProps> = ({
     const onThumbLoad = () => {
       loaded++;
       if (loaded === videoIds.length && onContentLoad) {
+        setMetaVisible(true);
         onContentLoad(containerRef.current);
       }
     };
@@ -85,13 +87,17 @@ const VideoStrip: React.FC<VideoStripProps> = ({
                 className={styles.thumbnail}
                 onClick={() => onOpen(id)}
               />
-              <span
-                className={styles.iconDelete}
-                onClick={() => handleDelete(id)}
-              >
-                <CloseOutlined />
-              </span>
-              <span className={styles.duration}>{videoList?.duration}</span>
+              {metaVisible && (
+                <>
+                  <span
+                    className={styles.iconDelete}
+                    onClick={() => handleDelete(id)}
+                  >
+                    <CloseOutlined />
+                  </span>
+                  <span className={styles.duration}>{videoList?.duration}</span>
+                </>
+              )}
             </div>
           ))
       ) : (
