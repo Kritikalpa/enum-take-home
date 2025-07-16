@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, type ReactNode } from "react";
+import React, { useState, useRef, type ReactNode } from "react";
 import styles from "./FilterDropdown.module.scss";
 import { useClickOutside } from "../../../hooks/useClickOutside";
 
